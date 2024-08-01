@@ -1,0 +1,6 @@
+all:
+  hosts:
+    copilot:
+      ansible_host: 54.236.232.240
+      ansible_user: ubuntu
+      ansible_ssh_private_key_file: vprofile-prod-key.pem

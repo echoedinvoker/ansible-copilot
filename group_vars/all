@@ -1,0 +1,2 @@
+NEOVIM_URL: https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+INSTALL_DIR: /opt/neovim

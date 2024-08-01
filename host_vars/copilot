@@ -1,0 +1,5 @@
+NEOVIM_URL: https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+INSTALL_DIR: /opt/neovim
+NODE_URL: https://nodejs.org/dist/v20.16.0/node-v20.16.0-linux-x64.tar.xz
+NODE_INSTALL_DIR: /opt/nodejs
+USER_HOME: /home/ubuntu

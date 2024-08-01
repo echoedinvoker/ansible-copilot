@@ -1,0 +1,130 @@
+---
+- name: Setup Copilot
+  hosts: copilot
+  become: yes
+
+  tasks:
+    - name: 更新 apt 緩存
+      apt:
+        update_cache: yes
+
+    - name: 安裝 build-essential
+      apt:
+        name:
+          - build-essential
+        state: present
+
+    - name: 建立 Neovim 安裝目錄
+      file:
+        path: "{{ INSTALL_DIR }}"
+        state: directory
+        mode: '0755'
+      register: install_dir_stat
+
+    - debug:
+        var: install_dir_stat.changed
+
+    - name: 下載 Neovim
+      get_url:
+        url: "{{ NEOVIM_URL }}"
+        dest: "/tmp/nvim-linux64.tar.gz"
+        mode: '0644'
+      when: install_dir_stat.changed
+
+    - name: 解壓 Neovim
+      unarchive:
+        src: "/tmp/nvim-linux64.tar.gz"
+        dest: "{{ INSTALL_DIR }}"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+      when: install_dir_stat.changed
+
+    - name: 創建符號連結
+      file:
+        src: "{{ INSTALL_DIR }}/bin/nvim"
+        dest: "/usr/local/bin/nvim"
+        state: link
+
+    - name: 清理 Neovim 臨時文件
+      file:
+        path: "/tmp/nvim-linux64.tar.gz"
+        state: absent
+
+    - name: 創建 Node.js 安裝目錄
+      file:
+        path: "{{ NODE_INSTALL_DIR }}"
+        state: directory
+        mode: '0755'
+      register: node_install_dir_stat
+
+    - name: 下載 Node.js
+      get_url:
+        url: "{{ NODE_URL }}"
+        dest: "/tmp/node.tar.xz"
+        mode: '0644'
+      when: node_install_dir_stat.changed
+
+    - name: 解壓 Node.js
+      unarchive:
+        src: "/tmp/node.tar.xz"
+        dest: "{{ NODE_INSTALL_DIR }}"
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+      when: node_install_dir_stat.changed
+
+    - name: 創建 Node.js 符號連結
+      file:
+        src: "{{ NODE_INSTALL_DIR }}/bin/node"
+        dest: "/usr/local/bin/node"
+        state: link
+
+    - name: 創建 npm 符號連結
+      file:
+        src: "{{ NODE_INSTALL_DIR }}/bin/npm"
+        dest: "/usr/local/bin/npm"
+        state: link
+
+    - name: 清理 Node.js 臨時文件
+      file:
+        path: "/tmp/node.tar.xz"
+        state: absent
+
+    - name: 備份現有的 Neovim 配置
+      command: "mv {{ USER_HOME }}/.config/nvim {{ USER_HOME }}/.config/nvim.bak"
+      args:
+        creates: "{{ USER_HOME }}/.config/nvim.bak"
+      ignore_errors: yes
+      become_user: ubuntu
+
+    - name: 清理 Neovim 相關目錄內容
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "{{ USER_HOME }}/.local/share/nvim"
+        - "{{ USER_HOME }}/.local/state/nvim"
+        - "{{ USER_HOME }}/.cache/nvim"
+        - "{{ USER_HOME }}/.config/nvim"
+      become_user: ubuntu
+
+    - name: Git clone AstroNvim 模板
+      git:
+        repo: 'https://github.com/AstroNvim/template'
+        dest: "{{ USER_HOME }}/.config/nvim"
+        depth: 1
+      become_user: ubuntu
+
+    - name: 移除模板的 git 連接
+      file:
+        path: "{{ USER_HOME }}/.config/nvim/.git"
+        state: absent
+      become_user: ubuntu
+
+    - name: 複製 Copilot 插件配置
+      copy:
+        src: "./files/copilot.lua"
+        dest: "{{ USER_HOME }}/.config/nvim/lua/plugins/copilot.lua"
+        mode: '0644'
+        owner: ubuntu
+        group: ubuntu
+      become: yes
